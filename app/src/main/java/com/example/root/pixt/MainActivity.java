@@ -1,10 +1,13 @@
 package com.example.root.pixt;
 
+import android.app.Activity;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.media.Image;
+import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -14,16 +17,26 @@ import android.view.View;
 import android.view.Window;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.Toast;
 
 import com.amulyakhare.textdrawable.TextDrawable;
 import com.amulyakhare.textdrawable.util.ColorGenerator;
+
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 
 public class MainActivity extends AppCompatActivity {
     private int REQUEST_CAMERA = 0, SELECT_FILE = 1;
     private LinearLayout btnEncode;
     private LinearLayout btnDecode;
-    private ImageView ivImage;
+    private ImageView title;
+    private ImageView encode;
+    private ImageView decode;
     private String userChoosenTask;
+    private Bitmap resultImage=null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,9 +45,9 @@ public class MainActivity extends AppCompatActivity {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_main);
 
-        ImageView title = (ImageView) findViewById(R.id.title_text);
-        ImageView encode = (ImageView) findViewById(R.id.encode);
-        ImageView decode = (ImageView) findViewById(R.id.decode);
+        title = (ImageView) findViewById(R.id.title_text);
+        encode = (ImageView) findViewById(R.id.encode);
+        decode = (ImageView) findViewById(R.id.decode);
 
         TextDrawable title_im = TextDrawable.builder().buildRect("Pixt", ColorGenerator.MATERIAL.getRandomColor());
         TextDrawable encode_im = TextDrawable.builder().buildRoundRect("E", ColorGenerator.MATERIAL.getRandomColor(), 100);
@@ -93,10 +106,58 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = new Intent();
         intent.setType("image/*");
         intent.setAction(Intent.ACTION_GET_CONTENT);//
-        startActivityForResult(Intent.createChooser(intent, "Select File"),SELECT_FILE);
+        startActivityForResult(Intent.createChooser(intent, "Select Image"),SELECT_FILE);
+    }
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode == Activity.RESULT_OK) {
+            if (requestCode == SELECT_FILE)
+                onSelectFromGalleryResult(data);
+            else if (requestCode == REQUEST_CAMERA)
+                onCaptureImageResult(data);
+        }
     }
 
 
-
+    @SuppressWarnings("deprecation")
+    private void onSelectFromGalleryResult(Intent data) {
+        Bitmap bm=null;
+        if (data != null) {
+            try {
+                bm = MediaStore.Images.Media.getBitmap(getApplicationContext().getContentResolver(), data.getData());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        resultImage = bm;
+        if(resultImage!=null)
+            Toast.makeText(getApplicationContext(), "Image selection successful", Toast.LENGTH_SHORT);
+        else
+            Toast.makeText(getApplicationContext(), "Image selection unsuccessful. Try again.", Toast.LENGTH_SHORT).show();
+    }
+    private void onCaptureImageResult(Intent data) {
+        Bitmap thumbnail = (Bitmap) data.getExtras().get("data");
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        thumbnail.compress(Bitmap.CompressFormat.JPEG, 90, bytes);
+        File destination = new File(Environment.getExternalStorageDirectory(),
+                System.currentTimeMillis() + ".jpg");
+        FileOutputStream fo;
+        try {
+            destination.createNewFile();
+            fo = new FileOutputStream(destination);
+            fo.write(bytes.toByteArray());
+            fo.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        resultImage = thumbnail;
+        if(resultImage!=null)
+            Toast.makeText(getApplicationContext(), "Image selection successful", Toast.LENGTH_SHORT);
+        else
+            Toast.makeText(getApplicationContext(), "Image selection unsuccessful. Try again.", Toast.LENGTH_SHORT).show();
+    }
 
 }
