@@ -7,6 +7,7 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.media.Image;
+import android.net.Uri;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.v7.app.AlertDialog;
@@ -33,6 +34,7 @@ public class MainActivity extends AppCompatActivity {
     private LinearLayout btnEncode;
     private LinearLayout btnDecode;
     private ImageView title;
+    public String name;
     private ImageView encode;
     private ImageView decode;
     private String userChoosenTask;
@@ -97,8 +99,13 @@ public class MainActivity extends AppCompatActivity {
 
     private void cameraIntent()
     {
-        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        startActivityForResult(intent, REQUEST_CAMERA);
+        File destination = new File(Environment.getExternalStorageDirectory() + File.separator + "DCIM" + File.separator + "temp.png");
+        Uri tempURI = Uri.fromFile(destination);
+        Intent i = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        i.putExtra(MediaStore.EXTRA_OUTPUT, tempURI);
+        i.putExtra(MediaStore.EXTRA_SIZE_LIMIT, tempURI);
+        startActivityForResult(i, REQUEST_CAMERA);
+
     }
 
     private void galleryIntent()
@@ -131,33 +138,23 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         resultImage = bm;
-        if(resultImage!=null)
-            Toast.makeText(getApplicationContext(), "Image selection successful", Toast.LENGTH_SHORT);
+        if(resultImage!=null){
+            Intent encAct = new Intent(this.getBaseContext(), EncodeActivity.class);
+            ByteArrayOutputStream _bs = new ByteArrayOutputStream();
+            bm.compress(Bitmap.CompressFormat.JPEG, 50, _bs);
+            encAct.putExtra("byteArray", _bs.toByteArray());
+            startActivity(encAct);
+        }
         else
             Toast.makeText(getApplicationContext(), "Image selection unsuccessful. Try again.", Toast.LENGTH_SHORT).show();
     }
     private void onCaptureImageResult(Intent data) {
-        Bitmap thumbnail = (Bitmap) data.getExtras().get("data");
-        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-        thumbnail.compress(Bitmap.CompressFormat.JPEG, 90, bytes);
-        File destination = new File(Environment.getExternalStorageDirectory(),
-                System.currentTimeMillis() + ".jpg");
-        FileOutputStream fo;
-        try {
-            destination.createNewFile();
-            fo = new FileOutputStream(destination);
-            fo.write(bytes.toByteArray());
-            fo.close();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        resultImage = thumbnail;
-        if(resultImage!=null)
-            Toast.makeText(getApplicationContext(), "Image selection successful", Toast.LENGTH_SHORT);
-        else
-            Toast.makeText(getApplicationContext(), "Image selection unsuccessful. Try again.", Toast.LENGTH_SHORT).show();
+
+            Intent encAct = new Intent(this.getBaseContext(), EncodeActivity.class);
+            encAct.putExtra("camere", true);
+            encAct.putExtra("imgname", "temp.png");
+            startActivity(encAct);
+
     }
 
 }

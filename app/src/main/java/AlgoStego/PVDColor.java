@@ -257,8 +257,8 @@ public class PVDColor extends StegoPVD {
 //                    colorRGB++; continue;
 //                }
 //	            else if(colorRGB == 2 && t > 7){colorRGB++; continue;}
-	            // Step 7: 	Extract ‘t’ bits, by the extracting method of original PVD just STEP 5.
-	            //  b = li – di  = 32 – 46 = 14
+	            // Step 7: 	Extract t bits, by the extracting method of original PVD just STEP 5.
+	            //  b = li  di  = 32 46 = 14
 	   	      	//	b = 01110
 	            int b = Math.abs(opt_Range[0] - di);
 	            char[] bin_Of_b = new char[t];
