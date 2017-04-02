@@ -236,7 +236,6 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, path, Toast.LENGTH_SHORT).show();
             encAct.putExtra("path", path);
             startActivity(encAct);
-
     }
 
 }
