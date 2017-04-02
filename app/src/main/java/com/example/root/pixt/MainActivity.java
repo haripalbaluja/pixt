@@ -90,33 +90,21 @@ public class MainActivity extends AppCompatActivity {
 
     }
     private void doit(){
-        StegoPVD pvd = new PVDColor();
-        Object obj = pvd.stego(decodeImage, "", false);
-        if(obj != null){
-            String secretStego = (String) obj;
-            StringBuilder theLast = new StringBuilder();
-            int[] strChar = new int[8];
-            for (int i = 0; i < secretStego.length(); )
-            {
-                strChar = new int[8];
-                for (int j = 0; j < 8; j++)
-                {
-                    if(i < secretStego.length())
-                        strChar[j] = Integer.parseInt(String.valueOf(secretStego.charAt(i++)));
-                }
-
-                int b = 0;
-                int bin = 1;
-                for (int k= strChar.length-1; k >= 0; k--){
-                    b+= strChar[k] * bin;
-                    bin = bin * 2;
-                }
-                theLast.append(String.valueOf((char)b));
-            }
-            Toast.makeText(getApplicationContext(), theLast.toString(), Toast.LENGTH_SHORT).show();
+        try
+        {
+            Steganogrator ane = new Steganogrator();
+            String messageText = ane.extract(  path, new StegProfile(),true);
+            Toast.makeText(getApplicationContext(), messageText, Toast.LENGTH_SHORT).show();
         }
-        else
-            Toast.makeText(getApplicationContext(), "No text in this image!!", Toast.LENGTH_SHORT).show();
+        catch( OutOfMemoryError oome )
+        {
+            //Implement
+        }
+        catch( Exception e )
+        {
+            e.printStackTrace();
+            Toast.makeText(getApplicationContext(),"No message was found embedded in this image.", Toast.LENGTH_SHORT).show();
+        }
     }
     private void selectImage() {
         final CharSequence[] items = { "Capture New", "Choose from Gallery",
@@ -145,6 +133,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void cameraIntent()
     {
+        path = Environment.getExternalStorageDirectory() + File.separator + "DCIM" + File.separator + "temp.png";
         File destination = new File(path);
         Uri tempURI = Uri.fromFile(destination);
         Intent i = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
@@ -232,7 +221,6 @@ public class MainActivity extends AppCompatActivity {
             Intent encAct = new Intent(this.getBaseContext(), EncodeActivity.class);
             encAct.putExtra("camera", true);
             encAct.putExtra("imgname", "temp.png");
-            path = Environment.getExternalStorageDirectory() + File.separator + "DCIM" + File.separator + "temp.png";
             Toast.makeText(this, path, Toast.LENGTH_SHORT).show();
             encAct.putExtra("path", path);
             startActivity(encAct);
