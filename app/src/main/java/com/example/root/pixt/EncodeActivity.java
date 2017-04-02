@@ -1,5 +1,6 @@
 package com.example.root.pixt;
 
+import android.content.DialogInterface;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -7,6 +8,7 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Environment;
 import android.provider.Settings;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -58,60 +60,78 @@ public class EncodeActivity extends AppCompatActivity {
         this.onBackPressed();
     }
 
-    public void encode(View v){
-        try
-        {
-            TextView message = (TextView) findViewById(R.id.message) ;
-            Steganogrator ane = new Steganogrator();
-            String str = message.getText().toString();
-            str = ane.insert( path, str, new StegProfile(), true );
-            File source = new File(path);
+    public void encode(View v) {
+        TextView message = (TextView) findViewById(R.id.message);
+        TextView key = (TextView) findViewById(R.id.key);
+        if (key.getText().toString().equals("")) {
+            new AlertDialog.Builder(this)
+                    .setTitle("Warning")
+                    .setMessage("You forgot to enter a key!\nA Key is needed for encryption.")
+                    .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            // continue with delete
+                        }
+                    })
+                    .setIcon(android.R.drawable.ic_dialog_alert)
+                    .show();
+        } else if (message.getText().toString().equals("")) {
+            new AlertDialog.Builder(this)
+                    .setTitle("Warning")
+                    .setMessage("Message field is empty!\nYou need to type your secret message in there.")
+                    .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            // continue with delete
+                        }
+                    })
+                    .show();
 
-            String destinationPath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Pixt/pixt"+System.currentTimeMillis()+".png";
-            InputStream in = null;
-            OutputStream out = null;
+        } else {
             try {
+                Steganogrator ane = new Steganogrator();
+                String str = message.getText().toString() + " digvijayharipalgurpreet!!!!!chakdephatte!!chabi " + key.getText().toString();
+                Toast.makeText(getApplicationContext(), str, Toast.LENGTH_SHORT).show();
+                str = ane.insert(path, str, new StegProfile(), true);
+                File source = new File(path);
 
-                //create output directory if it doesn't exist
-                File dir = new File (Environment.getExternalStorageDirectory().getAbsolutePath() + "/Pixt");
-                if (!dir.exists())
-                {
-                    dir.mkdirs();
+                String destinationPath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Pixt/pixt" + System.currentTimeMillis() + ".png";
+                InputStream in = null;
+                OutputStream out = null;
+                try {
+
+                    //create output directory if it doesn't exist
+                    File dir = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/Pixt");
+                    if (!dir.exists()) {
+                        dir.mkdirs();
+                    }
+
+
+                    in = new FileInputStream(str);
+                    out = new FileOutputStream(destinationPath);
+
+                    byte[] buffer = new byte[1024];
+                    int read;
+                    while ((read = in.read(buffer)) != -1) {
+                        out.write(buffer, 0, read);
+                    }
+                    in.close();
+
+                    // write the output file (You have now copied the file)
+                    out.flush();
+                    out.close();
+
+                } catch (FileNotFoundException fnfe1) {
+                    Log.e("tag", fnfe1.getMessage());
+                } catch (Exception e) {
+                    Log.e("tag", e.getMessage());
                 }
 
-
-                in = new FileInputStream(str);
-                out = new FileOutputStream(destinationPath);
-
-                byte[] buffer = new byte[1024];
-                int read;
-                while ((read = in.read(buffer)) != -1) {
-                    out.write(buffer, 0, read);
-                }
-                in.close();
-                in = null;
-
-                // write the output file (You have now copied the file)
-                out.flush();
-                out.close();
-                out = null;
-
-            }  catch (FileNotFoundException fnfe1) {
-                Log.e("tag", fnfe1.getMessage());
+            } catch (OutOfMemoryError oome) {
+                Toast.makeText(getApplication(), "Selected image is too large!", Toast.LENGTH_SHORT).show();
+                oome.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-            catch (Exception e) {
-                Log.e("tag", e.getMessage());
-            }
-
-        }
-        catch( OutOfMemoryError oome )
-        {
-            Toast.makeText(getApplication(), "Selected image is too large!", Toast.LENGTH_SHORT).show();
-            oome.printStackTrace();
-        }
-        catch( Exception e )
-        {
-            e.printStackTrace();
         }
     }
+
 }

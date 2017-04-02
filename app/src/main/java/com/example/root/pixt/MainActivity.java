@@ -18,8 +18,10 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutCompat;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Window;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
@@ -91,12 +93,50 @@ public class MainActivity extends AppCompatActivity {
         });
 
     }
-    private void doit(){
+    private int doit(){
         try
         {
             Steganogrator ane = new Steganogrator();
             String messageText = ane.extract(  path, new StegProfile(),true);
-            Toast.makeText(getApplicationContext(), messageText, Toast.LENGTH_SHORT).show();
+            final String key = messageText.split("digvijayharipalgurpreet!!!!!chakdephatte!!chabi")[1];
+            final String msg = messageText.split("digvijayharipalgurpreet!!!!!chakdephatte!!chabi")[0];
+            AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+            LayoutInflater li = LayoutInflater.from(this);
+            View promptsView = li.inflate(R.layout.prompts, null);
+            // set prompts.xml to alertdialog builder
+            alertDialogBuilder.setView(promptsView);
+
+            final EditText userInput = (EditText) promptsView
+                    .findViewById(R.id.editTextDialogUserInput);
+            alertDialogBuilder
+                    .setCancelable(false)
+                    .setPositiveButton("OK",
+                            new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog,int id) {
+                                    // get user input and set it to result
+                                    // edit text
+                                    if(userInput.getText().equals(key)){
+                                        Toast.makeText(getApplicationContext(), "ACCESS DENIED!\nKey is incorrect!", Toast.LENGTH_LONG).show();
+                                    }
+                                    else
+                                        Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_LONG).show();
+
+                                }
+                            })
+                    .setNegativeButton("Cancel",
+                            new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog,int id) {
+                                    dialog.cancel();
+                                }
+                            });
+
+            // create alert dialog
+            AlertDialog alertDialog = alertDialogBuilder.create();
+
+            // show it
+            alertDialog.show();
+
+
         }
         catch( OutOfMemoryError oome )
         {
@@ -107,7 +147,9 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
             Toast.makeText(getApplicationContext(),"No message was found embedded in this image.", Toast.LENGTH_SHORT).show();
         }
+        return 0;
     }
+
     private void selectImage() {
         final CharSequence[] items = { "Capture New", "Choose from Gallery",
                 "Cancel" };
