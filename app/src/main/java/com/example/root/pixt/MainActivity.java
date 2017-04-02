@@ -1,14 +1,17 @@
 package com.example.root.pixt;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.media.Image;
 import android.net.Uri;
 import android.os.Environment;
+import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -29,16 +32,22 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
+import AlgoStego.PVDColor;
+import AlgoStego.StegoPVD;
+
 public class MainActivity extends AppCompatActivity {
     private int REQUEST_CAMERA = 0, SELECT_FILE = 1;
     private LinearLayout btnEncode;
     private LinearLayout btnDecode;
     private ImageView title;
     public String name;
+    public String path;
     private ImageView encode;
     private ImageView decode;
+    public Bitmap decodeImage;
     private String userChoosenTask;
     private Bitmap resultImage=null;
+    public boolean returnOnly = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,12 +75,49 @@ public class MainActivity extends AppCompatActivity {
         btnEncode.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
+                returnOnly=false;
                 selectImage();
             }
         });
 
-    }
+        btnDecode.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v) {
+                returnOnly=true;
+                galleryIntent(false);
+            }
+        });
 
+    }
+    private void doit(){
+        StegoPVD pvd = new PVDColor();
+        Object obj = pvd.stego(decodeImage, "", false);
+        if(obj != null){
+            String secretStego = (String) obj;
+            StringBuilder theLast = new StringBuilder();
+            int[] strChar = new int[8];
+            for (int i = 0; i < secretStego.length(); )
+            {
+                strChar = new int[8];
+                for (int j = 0; j < 8; j++)
+                {
+                    if(i < secretStego.length())
+                        strChar[j] = Integer.parseInt(String.valueOf(secretStego.charAt(i++)));
+                }
+
+                int b = 0;
+                int bin = 1;
+                for (int k= strChar.length-1; k >= 0; k--){
+                    b+= strChar[k] * bin;
+                    bin = bin * 2;
+                }
+                theLast.append(String.valueOf((char)b));
+            }
+            Toast.makeText(getApplicationContext(), theLast.toString(), Toast.LENGTH_SHORT).show();
+        }
+        else
+            Toast.makeText(getApplicationContext(), "No text in this image!!", Toast.LENGTH_SHORT).show();
+    }
     private void selectImage() {
         final CharSequence[] items = { "Capture New", "Choose from Gallery",
                 "Cancel" };
@@ -88,7 +134,7 @@ public class MainActivity extends AppCompatActivity {
                 } else if (items[item].equals("Choose from Gallery")) {
                     userChoosenTask="Choose from Library";
                     if(result)
-                        galleryIntent();
+                        galleryIntent(false);
                 } else if (items[item].equals("Cancel")) {
                     dialog.dismiss();
                 }
@@ -99,16 +145,15 @@ public class MainActivity extends AppCompatActivity {
 
     private void cameraIntent()
     {
-        File destination = new File(Environment.getExternalStorageDirectory() + File.separator + "DCIM" + File.separator + "temp.png");
+        File destination = new File(path);
         Uri tempURI = Uri.fromFile(destination);
         Intent i = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         i.putExtra(MediaStore.EXTRA_OUTPUT, tempURI);
-        i.putExtra(MediaStore.EXTRA_SIZE_LIMIT, tempURI);
         startActivityForResult(i, REQUEST_CAMERA);
 
     }
 
-    private void galleryIntent()
+    private void galleryIntent(boolean returnOnly)
     {
         Intent intent = new Intent();
         intent.setType("image/*");
@@ -120,18 +165,43 @@ public class MainActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == Activity.RESULT_OK) {
             if (requestCode == SELECT_FILE)
-                onSelectFromGalleryResult(data);
+                decodeImage = onSelectFromGalleryResult(data);
             else if (requestCode == REQUEST_CAMERA)
                 onCaptureImageResult(data);
         }
     }
 
+    public static String getRealPathFromURI_API19(Context context, Uri uri){
+        String filePath = "";
+        String wholeID = DocumentsContract.getDocumentId(uri);
+
+        // Split at colon, use second item in the array
+        String id = wholeID.split(":")[1];
+
+        String[] column = { MediaStore.Images.Media.DATA };
+
+        // where id is equal to
+        String sel = MediaStore.Images.Media._ID + "=?";
+
+        Cursor cursor = context.getContentResolver().query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                column, sel, new String[]{ id }, null);
+
+        int columnIndex = cursor.getColumnIndex(column[0]);
+
+        if (cursor.moveToFirst()) {
+            filePath = cursor.getString(columnIndex);
+        }
+        cursor.close();
+        return filePath;
+    }
 
     @SuppressWarnings("deprecation")
-    private void onSelectFromGalleryResult(Intent data) {
+    private Bitmap onSelectFromGalleryResult(Intent data) {
         Bitmap bm=null;
         if (data != null) {
             try {
+                Uri uri = data.getData();
+                path=getRealPathFromURI_API19(getApplicationContext(), uri);
                 bm = MediaStore.Images.Media.getBitmap(getApplicationContext().getContentResolver(), data.getData());
             } catch (IOException e) {
                 e.printStackTrace();
@@ -139,20 +209,32 @@ public class MainActivity extends AppCompatActivity {
         }
         resultImage = bm;
         if(resultImage!=null){
-            Intent encAct = new Intent(this.getBaseContext(), EncodeActivity.class);
-            ByteArrayOutputStream _bs = new ByteArrayOutputStream();
-            bm.compress(Bitmap.CompressFormat.JPEG, 50, _bs);
-            encAct.putExtra("byteArray", _bs.toByteArray());
-            startActivity(encAct);
+                Intent encAct = new Intent(this.getBaseContext(), EncodeActivity.class);
+                ByteArrayOutputStream _bs = new ByteArrayOutputStream();
+                bm.compress(Bitmap.CompressFormat.JPEG, 50, _bs);
+                encAct.putExtra("byteArray", _bs.toByteArray());
+                encAct.putExtra("path", path);
+                Toast.makeText(getApplicationContext(), path, Toast.LENGTH_SHORT).show();
+            decodeImage=bm;
+            if(!returnOnly)
+                startActivity(encAct);
+            else
+                doit();
+
+
         }
         else
             Toast.makeText(getApplicationContext(), "Image selection unsuccessful. Try again.", Toast.LENGTH_SHORT).show();
+        return bm;
     }
     private void onCaptureImageResult(Intent data) {
 
             Intent encAct = new Intent(this.getBaseContext(), EncodeActivity.class);
-            encAct.putExtra("camere", true);
+            encAct.putExtra("camera", true);
             encAct.putExtra("imgname", "temp.png");
+            path = Environment.getExternalStorageDirectory() + File.separator + "DCIM" + File.separator + "temp.png";
+            Toast.makeText(this, path, Toast.LENGTH_SHORT).show();
+            encAct.putExtra("path", path);
             startActivity(encAct);
 
     }

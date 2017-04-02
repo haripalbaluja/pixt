@@ -4,9 +4,6 @@ import java.util.LinkedList;
 
 import android.graphics.Bitmap;
 
-/**
- * Created by Tamem on 5/23/13.
- */
  abstract public class StegoPVD implements StegoAlgo {
 	 static public LinkedList<int[]> theSkipColorPixels = new LinkedList<int[]>();
 	Bitmap myBitmap = null; int myBitmap_Width = 0; int myBitmap_Height = 0; int[] all_Piexl_Color; int index_For_Partitional = 0 ;
