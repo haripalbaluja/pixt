@@ -56,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_main);
 
+
         title = (ImageView) findViewById(R.id.title_text);
         encode = (ImageView) findViewById(R.id.encode);
         decode = (ImageView) findViewById(R.id.decode);
@@ -160,28 +161,17 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public static String getRealPathFromURI_API19(Context context, Uri uri){
-        String filePath = "";
-        String wholeID = DocumentsContract.getDocumentId(uri);
+    private String getRealPathFromURI(Uri contentURI) {
 
-        // Split at colon, use second item in the array
-        String id = wholeID.split(":")[1];
-
-        String[] column = { MediaStore.Images.Media.DATA };
-
-        // where id is equal to
-        String sel = MediaStore.Images.Media._ID + "=?";
-
-        Cursor cursor = context.getContentResolver().query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                column, sel, new String[]{ id }, null);
-
-        int columnIndex = cursor.getColumnIndex(column[0]);
-
-        if (cursor.moveToFirst()) {
-            filePath = cursor.getString(columnIndex);
+        String thePath = "no-path-found";
+        String[] filePathColumn = {MediaStore.Images.Media.DISPLAY_NAME};
+        Cursor cursor = getContentResolver().query(contentURI, filePathColumn, null, null, null);
+        if(cursor.moveToFirst()){
+            int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
+            thePath = cursor.getString(columnIndex);
         }
         cursor.close();
-        return filePath;
+        return  thePath;
     }
 
     @SuppressWarnings("deprecation")
@@ -190,7 +180,7 @@ public class MainActivity extends AppCompatActivity {
         if (data != null) {
             try {
                 Uri uri = data.getData();
-                path=getRealPathFromURI_API19(getApplicationContext(), uri);
+                path=getRealPathFromURI(uri);
                 bm = MediaStore.Images.Media.getBitmap(getApplicationContext().getContentResolver(), data.getData());
             } catch (IOException e) {
                 e.printStackTrace();
