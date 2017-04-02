@@ -31,7 +31,15 @@ package com.example.root.pixt;
 
 
 
+import android.os.Environment;
+import android.util.Log;
+
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 public class Steganogrator
 { 
@@ -344,6 +352,45 @@ public class Steganogrator
 		}
 		
 		//System.out.println( "Save to <" + tstFile + ">" );
+		File source = new File(imageFile);
+
+		String destinationPath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Pixt/pixt"+System.currentTimeMillis()+".png";
+		InputStream in = null;
+		OutputStream out = null;
+		try {
+
+			//create output directory if it doesn't exist
+			File dir = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/Pixt");
+			if (!dir.exists())
+			{
+				dir.mkdirs();
+			}
+
+
+			in = new FileInputStream(imageFile);
+			out = new FileOutputStream(destinationPath);
+
+			byte[] buffer = new byte[1024];
+			int read;
+			while ((read = in.read(buffer)) != -1) {
+				out.write(buffer, 0, read);
+			}
+			in.close();
+			in = null;
+
+			// write the output file (You have now copied the file)
+			out.flush();
+			out.close();
+			out = null;
+
+		}  catch (FileNotFoundException fnfe1) {
+			Log.e("tag", fnfe1.getMessage());
+		}
+		catch (Exception e) {
+			Log.e("tag", e.getMessage());
+		}
+
+
 
 		return( tstFile.getAbsolutePath() );
     }

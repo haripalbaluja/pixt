@@ -17,6 +17,7 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutCompat;
+import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.widget.ImageView;
@@ -31,6 +32,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URISyntaxException;
 
 import AlgoStego.PVDColor;
 import AlgoStego.StegoPVD;
@@ -55,7 +57,6 @@ public class MainActivity extends AppCompatActivity {
         getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_main);
-
 
         title = (ImageView) findViewById(R.id.title_text);
         encode = (ImageView) findViewById(R.id.encode);
@@ -160,18 +161,34 @@ public class MainActivity extends AppCompatActivity {
                 onCaptureImageResult(data);
         }
     }
+    public static String getRealPathFromURI_BelowAPI11(Context context, Uri contentUri){
+        String[] proj = { MediaStore.Images.Media.DATA };
+        Cursor cursor = context.getContentResolver().query(contentUri, proj, null, null, null);
+        int column_index
+                = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+        cursor.moveToFirst();
+        return cursor.getString(column_index);
+    }
+    public static String getPath(Context context, Uri uri) throws URISyntaxException {
+        if ("content".equalsIgnoreCase(uri.getScheme())) {
+            String[] projection = { "_data" };
+            Cursor cursor = null;
 
-    private String getRealPathFromURI(Uri contentURI) {
-
-        String thePath = "no-path-found";
-        String[] filePathColumn = {MediaStore.Images.Media.DISPLAY_NAME};
-        Cursor cursor = getContentResolver().query(contentURI, filePathColumn, null, null, null);
-        if(cursor.moveToFirst()){
-            int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
-            thePath = cursor.getString(columnIndex);
+            try {
+                cursor = context.getContentResolver().query(uri, projection, null, null, null);
+                int column_index = cursor.getColumnIndexOrThrow("_data");
+                if (cursor.moveToFirst()) {
+                    return cursor.getString(column_index);
+                }
+            } catch (Exception e) {
+                // Eat it
+            }
         }
-        cursor.close();
-        return  thePath;
+        else if ("file".equalsIgnoreCase(uri.getScheme())) {
+            return uri.getPath();
+        }
+
+        return null;
     }
 
     @SuppressWarnings("deprecation")
@@ -180,7 +197,12 @@ public class MainActivity extends AppCompatActivity {
         if (data != null) {
             try {
                 Uri uri = data.getData();
-                path=getRealPathFromURI(uri);
+                try {
+                    path = getPath(getApplicationContext(), uri);
+                }
+                catch (URISyntaxException e){
+                    Log.e("main", "fts");
+                }
                 bm = MediaStore.Images.Media.getBitmap(getApplicationContext().getContentResolver(), data.getData());
             } catch (IOException e) {
                 e.printStackTrace();
@@ -193,7 +215,6 @@ public class MainActivity extends AppCompatActivity {
                 bm.compress(Bitmap.CompressFormat.JPEG, 50, _bs);
                 encAct.putExtra("byteArray", _bs.toByteArray());
                 encAct.putExtra("path", path);
-                Toast.makeText(getApplicationContext(), path, Toast.LENGTH_SHORT).show();
             decodeImage=bm;
             if(!returnOnly)
                 startActivity(encAct);
@@ -211,7 +232,6 @@ public class MainActivity extends AppCompatActivity {
             Intent encAct = new Intent(this.getBaseContext(), EncodeActivity.class);
             encAct.putExtra("camera", true);
             encAct.putExtra("imgname", "temp.png");
-            Toast.makeText(this, path, Toast.LENGTH_SHORT).show();
             encAct.putExtra("path", path);
             startActivity(encAct);
     }
